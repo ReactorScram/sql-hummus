@@ -63,4 +63,8 @@ KV elements have no metadata.
 
 Use KV files for app settings, bookmark storage, or keeping metadata about file paths. SQLite offers more reliability than plain JSON, and lookups are faster for large files.
 
+## fput
+
+`fput/github.com/ReactorScram/sql-hummus`
+
 _Finally, a Windows Registry for GNU/Linux._
