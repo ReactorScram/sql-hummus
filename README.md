@@ -1,8 +1,8 @@
-# SQL Appetizer
+# SQL Hummus
 
-Simple defaults for taking a bite out of SQLite.
+Simple defaults for taking an appetizer-sized bite out of SQLite.
 
-sql-appetizer offers a Rust API and a CLI for shell scripting or interactive use: `cargo install sql-appetizer`
+sql-hummus offers a Rust API and a CLI for shell scripting or interactive use: `cargo install sql-hummus`
 
 ## Log files
 
