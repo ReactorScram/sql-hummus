@@ -207,7 +207,6 @@ impl Kv {
 
     pub fn contains_key<S: AsRef<str>>(&self, key: S) -> Result<bool> {
         let stmt = self.inner.borrow_statement(self.contains_handle)?;
-        stmt.reset()?;
         stmt.bind((1, key.as_ref()))?;
         let mut rows = stmt.iter();
         let row = rows.next().context("Expected one row here")??;
@@ -220,7 +219,6 @@ impl Kv {
 
     pub fn get<S: AsRef<str>>(&self, key: S) -> Result<Option<String>> {
         let stmt = self.inner.borrow_statement(self.get_handle)?;
-        stmt.reset()?;
         stmt.bind((1, key.as_ref()))?;
         let mut rows = stmt.iter();
         match rows.next() {
@@ -235,7 +233,6 @@ impl Kv {
         let old_value = self.get(&key)?;
         {
             let stmt = self.inner.borrow_statement(self.insert_handle)?;
-            stmt.reset()?;
             stmt.bind((1, key.as_ref()))?;
             stmt.bind((2, value.as_ref()))?;
             ensure!(stmt.next()? == sqlite::State::Done);
@@ -246,7 +243,6 @@ impl Kv {
 
     pub fn with_prefix<'a>(&'a self, prefix: &'a str) -> Result<KvCursor<'a>> {
         let stmt = self.inner.borrow_statement(self.prefix_handle)?;
-        stmt.reset()?;
         stmt.bind((1, prefix))?;
         let cursor = stmt.iter();
         Ok(KvCursor {

@@ -338,7 +338,7 @@ dependencies = [
 [[package]]
 name = "sqlite"
 version = "0.37.0"
-source = "git+https://github.com/ReactorScram/sqlite?rev=d3c864e97498667f274ed1b2c05f8e9e4f960299#d3c864e97498667f274ed1b2c05f8e9e4f960299"
+source = "git+https://github.com/ReactorScram/sqlite?rev=d8b38e31ee2e18f084e5892a9b9ee12ed057d3b8#d8b38e31ee2e18f084e5892a9b9ee12ed057d3b8"
 dependencies = [
  "sqlite3-sys",
 ]

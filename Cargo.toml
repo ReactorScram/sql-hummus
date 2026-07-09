@@ -9,4 +9,4 @@ anyhow = { version = "1.0.103", features = ["backtrace"] }
 camino = "1.2.4"
 chrono = "0.4.45"
 clap = { version = "4.6.1", features = ["derive"] }
-sqlite = { git = "https://github.com/ReactorScram/sqlite", rev = "d3c864e97498667f274ed1b2c05f8e9e4f960299" }
+sqlite = { git = "https://github.com/ReactorScram/sqlite", rev = "d8b38e31ee2e18f084e5892a9b9ee12ed057d3b8" }
