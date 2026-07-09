@@ -10,3 +10,4 @@ camino = "1.2.4"
 chrono = "0.4.45"
 clap = { version = "4.6.1", features = ["derive"] }
 sqlite = { git = "https://github.com/ReactorScram/sqlite", rev = "d4e9a8d90c5e5b2f8389ff49c0eb03548910cee2" }
+thiserror = "2.0.18"
