@@ -229,7 +229,7 @@ impl Kv {
     }
 
     pub fn insert<S: AsRef<str>, T: AsRef<str>>(&self, key: S, value: T) -> Result<Option<String>> {
-        self.inner.execute("BEGIN IMMEDIATE TRANSACTION")?;
+        let tx = self.inner.begin_immediate_transaction()?;
         let old_value = self.get(&key)?;
         {
             let stmt = self.inner.borrow_statement(self.insert_handle)?;
@@ -237,7 +237,7 @@ impl Kv {
             stmt.bind((2, value.as_ref()))?;
             ensure!(stmt.next()? == sqlite::State::Done);
         }
-        self.inner.execute("COMMIT")?;
+        tx.commit()?;
         Ok(old_value)
     }
 
