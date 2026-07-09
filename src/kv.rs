@@ -71,7 +71,7 @@ impl Kv {
         if needs_setup {
             // Looks like a new file, so let's set everything up and then stamp it
 
-            inner.execute(format!("CREATE TABLE IF NOT EXISTS {KV_TABLE_NAME} (key TEXT PRIMARY KEY NOT NULL, value TEXT) WITHOUT ROWID;"))?;
+            inner.execute(format!("CREATE TABLE IF NOT EXISTS {KV_TABLE_NAME} (key TEXT PRIMARY KEY NOT NULL, value TEXT) WITHOUT ROWID"))?;
 
             // Using `format!()` here because PRAGMA doesn't seem to like bound params.
             // SECURITY: KV_USER_VERSION is not user-controlled input, it's a compile-time const that we control, so it's not a SQL injection vuln.
@@ -159,7 +159,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn kv() -> Result<()> {
+    fn simple() -> Result<()> {
         let path = "sql_hummus_test_temp_ZQ3KECAY.db";
         const COLOR_MODE: &str = "/myapp/color_mode";
 

@@ -8,7 +8,7 @@ sql-hummus offers a Rust API and a CLI for shell scripting or interactive use: `
 
 ## Log files
 
-"Log" files are append-only arrays of text elements. They act like a Rust `Vec<(SystemTime, String)>`, but append-only.
+"Log" files are append-only arrays of text elements. They act like a Rust `Vec<(SystemTime, String)>`, but append-only and persisted on disk.
 
 ```
 # Append a new element to `log.db`, assuming it's a log file or doesn't exist yet

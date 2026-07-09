@@ -2,9 +2,9 @@ use std::process::ExitCode;
 
 use anyhow::Result;
 use clap::Parser as _;
-use sql_hummus::Kv;
+use sql_hummus::{Kv, Log};
 
-use crate::cli::{Command, KvCommand};
+use crate::cli::{Command, KvCommand, LogCommand};
 
 mod cli;
 
@@ -69,6 +69,17 @@ fn inner_main() -> Result<bool> {
                 Ok(true)
             }
         },
-        Command::Log { cmd: _ } => todo!(),
+        Command::Log { cmd } => match cmd {
+            LogCommand::Get { path: _, index: _ } => todo!(),
+            LogCommand::Iter => todo!(),
+            LogCommand::Push { path, content } => {
+                let Some(content) = content else {
+                    // FIXME: Read from stdin
+                    todo!()
+                };
+                Log::new(path)?.push(content)?;
+                Ok(true)
+            }
+        }
     }
 }
