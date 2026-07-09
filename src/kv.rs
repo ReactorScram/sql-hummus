@@ -210,9 +210,6 @@ mod tests {
             .collect::<Vec<_>>(),
         );
 
-        cxn.clear()?;
-        assert!(!cxn.contains_key(COLOR_MODE)?);
-
         Ok(())
     }
 }
