@@ -445,15 +445,16 @@ dependencies = [
  "clap",
  "serde",
  "serde_json",
- "sqlite",
+ "sql-peas",
  "thiserror",
  "ulid",
 ]
 
 [[package]]
-name = "sqlite"
-version = "0.37.0"
-source = "git+https://github.com/ReactorScram/sqlite?rev=d4e9a8d90c5e5b2f8389ff49c0eb03548910cee2#d4e9a8d90c5e5b2f8389ff49c0eb03548910cee2"
+name = "sql-peas"
+version = "0.38.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2fad2fb2e104f4ccf6a38fb4b2113e114ec38a2f0868b8fe3aef2fc252203799"
 dependencies = [
  "sqlite3-sys",
 ]

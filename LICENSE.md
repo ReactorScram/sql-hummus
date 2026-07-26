@@ -1,6 +1,6 @@
-# sql-appetizer license
+# sql-hummus license
 
-`sql-appetizer` is licensed under the terms of the [GNU Affero General Public License, Version 3](https://www.gnu.org/licenses/agpl-3.0.html), plus an additional clause:
+sql-hummus is licensed under the terms of the [GNU Affero General Public License, Version 3](https://www.gnu.org/licenses/agpl-3.0.html), with additional clauses:
 
 By using this software, or software that depends on it, you agree that:
 

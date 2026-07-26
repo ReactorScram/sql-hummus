@@ -1,0 +1,12 @@
+.PHONY: all
+all:
+
+.PHONY: check
+check:
+	cargo fmt --check && cargo clippy --all && cargo test
+
+.PHONY: publish
+publish:
+	git tag --force sql-hummus-v$$(cat Cargo.toml | grep version | head -1 | cut -d\" -f2)
+	git push --tags
+	cargo publish

@@ -5,6 +5,7 @@ use camino::Utf8PathBuf;
 use chrono::DateTime;
 
 #[derive(clap::Parser, Debug, PartialEq, Eq)]
+#[command(version, about, long_about = None)]
 pub(crate) struct Cli {
     #[command(subcommand)]
     pub(crate) cmd: Command,
@@ -14,40 +15,39 @@ pub(crate) struct Cli {
 pub(crate) enum Command {
     /// Key-value files
     Kv {
+        /// Path of the key-value file
+        ///
+        /// e.g. "kv.db"
+        path: Utf8PathBuf,
         #[command(subcommand)]
         cmd: KvCommand,
     },
 
     /// Log files
     Log {
+        /// Path of the log file
+        ///
+        /// e.g. "log.db"
+        path: Utf8PathBuf,
         #[command(subcommand)]
         cmd: LogCommand,
     },
 }
 
+/// Commands that operate on a key-value database file
 #[derive(clap::Subcommand, Debug, PartialEq, Eq)]
 pub(crate) enum KvCommand {
     ContainsKey {
-        /// Path of the database file
-        ///
-        /// e.g. "log.db" or "kv.db"
-        path: Utf8PathBuf,
         key: String,
     },
     Get {
-        /// Path of the database file
-        ///
-        /// e.g. "log.db" or "kv.db"
-        path: Utf8PathBuf,
         key: String,
     },
     Insert {
-        path: Utf8PathBuf,
         key: String,
         value: String,
     },
     WithPrefix {
-        path: Utf8PathBuf,
         #[arg(default_value_t = String::new())]
         prefix: String,
     },
@@ -56,21 +56,12 @@ pub(crate) enum KvCommand {
 #[derive(clap::Subcommand, Debug, PartialEq, Eq)]
 pub(crate) enum LogCommand {
     Get {
-        /// Path of the database file
-        ///
-        /// e.g. "log.db" or "kv.db"
-        path: Utf8PathBuf,
         index: LogIndex,
     },
     Iter,
     /// Writes a new log element to a log database file
     Push {
-        /// Path of the database file
-        ///
-        /// e.g. "log.db"
-        path: Utf8PathBuf,
-
-        /// Content to append (or read from stdin if none provided)
+        /// Content to append (If no content is provided, sql-hummus reads stdin to a memory buffer and appends that)
         content: Option<String>,
     },
 }
@@ -79,8 +70,8 @@ pub(crate) enum LogCommand {
 pub(crate) enum LogIndex {
     DateRange(Range<DateTime<chrono::FixedOffset>>),
     DateScalar(DateTime<chrono::FixedOffset>),
-    NumberRange(Range<u64>),
-    NumberScalar(u64),
+    NumberRange(Range<i64>),
+    NumberScalar(i64),
 }
 
 impl FromStr for LogIndex {
@@ -93,8 +84,8 @@ impl FromStr for LogIndex {
             let end = &s[dots_pos + 2..];
 
             {
-                let start = u64::from_str(start);
-                let end = u64::from_str(end);
+                let start = i64::from_str(start);
+                let end = i64::from_str(end);
                 if let (Ok(start), Ok(end)) = (start, end) {
                     return Ok(Self::NumberRange(start..end));
                 }
@@ -104,7 +95,7 @@ impl FromStr for LogIndex {
                 DateTime::parse_from_rfc3339(start)?..DateTime::parse_from_rfc3339(end)?,
             ))
         } else {
-            if let Ok(x) = u64::from_str(s) {
+            if let Ok(x) = i64::from_str(s) {
                 Ok(Self::NumberScalar(x))
             } else {
                 Ok(Self::DateScalar(DateTime::parse_from_rfc3339(s)?))
@@ -130,15 +121,15 @@ mod tests {
             &[
                 "app_name",
                 "kv",
-                "insert",
                 "kv.db",
+                "insert",
                 "/myapp/bookmarks/https://example.com",
                 "",
             ],
             Cli {
                 cmd: Command::Kv {
+                    path: "kv.db".into(),
                     cmd: KvCommand::Insert {
-                        path: "kv.db".into(),
                         key: "/myapp/bookmarks/https://example.com".into(),
                         value: "".into(),
                     },
@@ -150,14 +141,14 @@ mod tests {
             &[
                 "app_name",
                 "log",
-                "push",
                 "log.db",
+                "push",
                 "Writing a new element to a log file",
             ],
             Cli {
                 cmd: Command::Log {
+                    path: "log.db".into(),
                     cmd: LogCommand::Push {
-                        path: "log.db".into(),
                         content: Some("Writing a new element to a log file".into()),
                     },
                 },
@@ -165,11 +156,11 @@ mod tests {
         );
 
         check_cli(
-            &["app_name", "log", "push", "log.db", ""],
+            &["app_name", "log", "log.db", "push", ""],
             Cli {
                 cmd: Command::Log {
+                    path: "log.db".into(),
                     cmd: LogCommand::Push {
-                        path: "log.db".into(),
                         content: Some("".into()),
                     },
                 },
@@ -177,23 +168,21 @@ mod tests {
         );
 
         check_cli(
-            &["app_name", "log", "push", "log.db"],
+            &["app_name", "log", "log.db", "push"],
             Cli {
                 cmd: Command::Log {
-                    cmd: LogCommand::Push {
-                        path: "log.db".into(),
-                        content: None,
-                    },
+                    path: "log.db".into(),
+                    cmd: LogCommand::Push { content: None },
                 },
             },
         );
 
         check_cli(
-            &["app_name", "log", "get", "log.db", "0"],
+            &["app_name", "log", "log.db", "get", "0"],
             Cli {
                 cmd: Command::Log {
+                    path: "log.db".into(),
                     cmd: LogCommand::Get {
-                        path: "log.db".into(),
                         index: LogIndex::NumberScalar(0),
                     },
                 },
@@ -201,11 +190,11 @@ mod tests {
         );
 
         check_cli(
-            &["app_name", "log", "get", "log.db", "0..2"],
+            &["app_name", "log", "log.db", "get", "0..2"],
             Cli {
                 cmd: Command::Log {
+                    path: "log.db".into(),
                     cmd: LogCommand::Get {
-                        path: "log.db".into(),
                         index: LogIndex::NumberRange(0..2),
                     },
                 },
@@ -216,14 +205,14 @@ mod tests {
             &[
                 "app_name",
                 "log",
-                "get",
                 "log.db",
+                "get",
                 "2026-07-07 04:31:00+00:00",
             ],
             Cli {
                 cmd: Command::Log {
+                    path: "log.db".into(),
                     cmd: LogCommand::Get {
-                        path: "log.db".into(),
                         index: LogIndex::DateScalar(
                             DateTime::parse_from_rfc3339("2026-07-07 04:31:00+00:00").unwrap(),
                         ),
@@ -236,14 +225,14 @@ mod tests {
             &[
                 "app_name",
                 "log",
-                "get",
                 "log.db",
+                "get",
                 "2026-07-07 04:31:00+00:00..2026-07-07 04:32:00+00:00",
             ],
             Cli {
                 cmd: Command::Log {
+                    path: "log.db".into(),
                     cmd: LogCommand::Get {
-                        path: "log.db".into(),
                         index: LogIndex::DateRange(
                             DateTime::parse_from_rfc3339("2026-07-07 04:31:00+00:00").unwrap()
                                 ..DateTime::parse_from_rfc3339("2026-07-07 04:32:00+00:00")

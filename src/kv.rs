@@ -1,7 +1,7 @@
-use sqlite::StatementHandle;
+use sql_peas::StatementHandle;
 
 pub struct Kv {
-    inner: sqlite::Connection,
+    inner: sql_peas::Connection,
     contains_handle: StatementHandle,
     get_handle: StatementHandle,
     insert_handle: StatementHandle,
@@ -9,14 +9,14 @@ pub struct Kv {
 }
 
 pub struct KvCursor<'a> {
-    inner: sqlite::Cursor<'a>,
+    inner: sql_peas::Cursor<'a>,
     prefix: &'a str,
 }
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error("SQLite error: {0}")]
-    Sqlite(#[from] sqlite::Error),
+    Sqlite(#[from] sql_peas::Error),
     #[error("Error: {0}")]
     Other(&'static str),
 }
@@ -46,7 +46,7 @@ const KV_TABLE_NAME: &str = "sql_hummus_0_kv";
 
 impl Kv {
     pub fn new<P: AsRef<std::path::Path>>(p: P) -> Result<Self> {
-        let mut inner = sqlite::Connection::open(p)?;
+        let mut inner = sql_peas::Connection::open(p)?;
 
         // Set some pragmas where new apps need different defaults than SQLite's defaults
         inner.execute("PRAGMA trusted_schema = 0;")?;
@@ -133,10 +133,8 @@ impl Kv {
             let stmt = self.inner.borrow_statement(self.insert_handle)?;
             stmt.bind((1, key.as_ref()))?;
             stmt.bind((2, value.as_ref()))?;
-            if stmt.next()? != sqlite::State::Done {
-                return Err(Error::Other(
-                    "We didn't get sqlite::State::Done during Kv::insert",
-                ));
+            if stmt.next()? != sql_peas::State::Done {
+                return Err(Error::Other("We didn't get State::Done during Kv::insert"));
             }
         }
         tx.commit()?;
