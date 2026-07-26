@@ -219,7 +219,7 @@ impl Log {
     }
 
     pub fn push<S: AsRef<str>>(&self, value: S) -> Result<i64> {
-        let ulid = ulid::Ulid::new();
+        let ulid = ulid::Ulid::generate();
         self.push_inner(ulid.to_string().as_str(), value.as_ref())
             .cookie("6JEUVGMI")
     }
