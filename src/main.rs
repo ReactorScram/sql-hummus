@@ -1,7 +1,8 @@
 use std::{io::Read, process::ExitCode};
 
-use anyhow::Result;
+use anyhow::{Context as _, Result};
 use clap::Parser as _;
+use serde_json::json;
 use sql_hummus::{Kv, Log};
 
 use crate::cli::{Command, KvCommand, LogCommand};
@@ -94,18 +95,34 @@ fn inner_main() -> Result<bool> {
                 Ok(true)
             }
             LogCommand::Push { content } => {
-                let content = match content {
-                    Some(x) => x,
-                    None => {
-                        let mut buf = Vec::with_capacity(1_024 * 1_024);
-                        std::io::stdin().read_to_end(&mut buf)?;
-                        String::from_utf8(buf)?
-                    }
-                };
+                let content = content_or_stdin(content.as_deref())?;
                 let index = Log::new(path)?.push(content)?;
                 println!("{index}");
                 Ok(true)
             }
         },
+        Command::Push { content } => {
+            let content = content_or_stdin(content.as_deref())?;
+            let dirs = directories::ProjectDirs::from("", "ReactorScram", "sql-hummus")
+                .context("Couldn't create directories::ProjectDirs")?;
+            let dir = dirs.data_local_dir();
+            std::fs::create_dir_all(dir)?;
+            let path = dir.join("default-log.db");
+            let index = Log::new(&path)?.push(content)?;
+            let output = json!({ "index": index, "path": path });
+            println!("{}", serde_json::to_string(&output)?);
+            Ok(true)
+        }
+    }
+}
+
+fn content_or_stdin(content: Option<&str>) -> Result<std::borrow::Cow<'_, str>> {
+    match content {
+        Some(x) => Ok(x.into()),
+        None => {
+            let mut buf = Vec::with_capacity(1_024 * 1_024);
+            std::io::stdin().read_to_end(&mut buf)?;
+            Ok(String::from_utf8(buf)?.into())
+        }
     }
 }

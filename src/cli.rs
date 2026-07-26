@@ -32,6 +32,9 @@ pub(crate) enum Command {
         #[command(subcommand)]
         cmd: LogCommand,
     },
+
+    /// Quick push to the default log file
+    Push { content: Option<String> },
 }
 
 /// Commands that operate on a key-value database file
