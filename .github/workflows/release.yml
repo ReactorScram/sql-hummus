@@ -31,5 +31,5 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
-          name: sql-hummus-x86_64-unknown-linux-gnu-${{ GITHUB_SHA::8 }}
+          name: sql-hummus-x86_64-unknown-linux-gnu-${{ github.sha }}
           path: dist/*
