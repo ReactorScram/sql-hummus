@@ -2,13 +2,20 @@
 
 [docs.rs](https://docs.rs/sql-hummus/) | [crates.io](https://crates.io/crates/sql-hummus) | [GitHub](https://github.com/ReactorScram/sql-hummus)
 
-sql-hummus is a SQLite appetizer made from [sql-peas](https://github.com/ReactorScram/sql-peas).
+sql-hummus is the tastiest way to use SQLite for log files and key-value stores:
 
-sql-hummus wraps SQLite databases into on-disk vectors or B-tree maps.
+```
+sql-hummus log diary.db push "Dear diary, when in the course of human events,"
 
-sql-hummus is a living cheatsheet for "I just need `Vec<String>` or `BTreeMap<String, String>` on disk real quick".
+# Save Waylad clipboard to a log element in the default log
+wl-paste | sql-hummus push
 
-Install sql-hummus `cargo install sql-hummus` to get the CLI, or add the library to your project with `cargo add sql-hummus`
+sql-hummus kv settings.db insert /myapp/color_mode dark_mode
+```
+
+sql-hummus is a living cheatsheet for "I want `Vec<String>` or `BTreeMap<String, String>`, but on disk".
+
+Use `cargo install sql-hummus` to get the CLI, or add the library to your project with `cargo add sql-hummus`
 
 ## Log files
 
