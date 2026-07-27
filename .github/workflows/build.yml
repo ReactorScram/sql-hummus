@@ -13,8 +13,8 @@ jobs:
   check:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
-      - run: rustup toolchain install stbale --profile=minimal --component=clippy --component=rustfmt
+      - uses: actions/checkout@v7
+      - run: rustup toolchain install stable --profile=minimal --component=clippy --component=rustfmt
       - run: cargo clippy -- -D warnings
       - run: cargo fmt --all -- --check
 
@@ -24,6 +24,6 @@ jobs:
         os: [macos-latest, ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: rustup toolchain install stable --profile=minimal
       - run: cargo test
