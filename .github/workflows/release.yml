@@ -1,0 +1,35 @@
+name: Release Binaries
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - "sql-hummus-v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-26.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Build release
+        run: |
+          set -euox pipefail
+          cargo build --release
+
+      - name: Prepare artifact
+        run: |
+          set -eoux pipefail
+          mkdir -p dist
+          cp target/release/sql-hummus dist/sql-hummus
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-amd64
+          path: dist/*
