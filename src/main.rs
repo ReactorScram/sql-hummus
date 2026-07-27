@@ -1,6 +1,7 @@
 use std::{io::Read, process::ExitCode};
 
 use anyhow::{Context as _, Result};
+use camino::Utf8PathBuf;
 use clap::Parser as _;
 use serde_json::json;
 use sql_hummus::{Kv, Log};
@@ -32,83 +33,98 @@ fn main() -> ExitCode {
     }
 }
 
+fn run_kv_command(path: Utf8PathBuf, cmd: KvCommand) -> Result<bool> {
+    match cmd {
+        KvCommand::ContainsKey { key } => match Kv::new(path)?.contains_key(key)? {
+            true => {
+                println!("true");
+                Ok(true)
+            }
+            false => {
+                println!("false");
+                Ok(false)
+            }
+        },
+        KvCommand::Get { key } => match Kv::new(path)?.get(key)? {
+            Some(value) => {
+                println!("{value}");
+                Ok(true)
+            }
+            None => {
+                eprintln!("Key not in KV file");
+                Ok(false)
+            }
+        },
+        KvCommand::Insert { key, value } => {
+            Kv::new(path)?.insert(key, value)?;
+            Ok(true)
+        }
+        KvCommand::WithPrefix { prefix } => {
+            let kv = Kv::new(path)?;
+            let cursor = kv.with_prefix(&prefix)?;
+            for row in cursor {
+                let (k, v) = row?;
+                println!("{}", serde_json::to_string(&(k, v))?);
+            }
+            Ok(true)
+        }
+    }
+}
+
+fn run_log_command(path: Utf8PathBuf, cmd: LogCommand) -> Result<bool> {
+    match cmd {
+        LogCommand::Get { index } => {
+            let index = match index {
+                cli::LogIndex::DateRange(..) => todo!(),
+                cli::LogIndex::DateScalar(..) => todo!(),
+                cli::LogIndex::NumberRange(..) => todo!(),
+                cli::LogIndex::NumberScalar(index) => index,
+            };
+            let Some(line) = Log::new(&path)?.get_by_index(index)? else {
+                eprintln!("{path:?} has no element at index {index}");
+                return Ok(false);
+            };
+            println!("{}", serde_json::to_string(&line)?);
+            Ok(true)
+        }
+        LogCommand::Iter => {
+            let log = Log::new(path)?;
+            let cursor = log.iter()?;
+            for row in cursor {
+                let line = row?;
+                println!("{}", serde_json::to_string(&line)?);
+            }
+            Ok(true)
+        }
+        LogCommand::Push { content } => {
+            let content = content_or_stdin(content.as_deref())?;
+            let index = Log::new(path)?.push(content)?;
+            println!("{index}");
+            Ok(true)
+        }
+    }
+}
+
 fn inner_main() -> Result<bool> {
     let cli = cli::Cli::try_parse()?;
     match cli.cmd {
-        Command::Kv { cmd, path } => match cmd {
-            KvCommand::ContainsKey { key } => match Kv::new(path)?.contains_key(key)? {
-                true => {
-                    println!("true");
-                    Ok(true)
-                }
-                false => {
-                    println!("false");
-                    Ok(false)
-                }
-            },
-            KvCommand::Get { key } => match Kv::new(path)?.get(key)? {
-                Some(value) => {
-                    println!("{value}");
-                    Ok(true)
-                }
-                None => {
-                    eprintln!("Key not in KV file");
-                    Ok(false)
-                }
-            },
-            KvCommand::Insert { key, value } => {
-                Kv::new(path)?.insert(key, value)?;
-                Ok(true)
-            }
-            KvCommand::WithPrefix { prefix } => {
-                let kv = Kv::new(path)?;
-                let cursor = kv.with_prefix(&prefix)?;
-                for row in cursor {
-                    let (k, v) = row?;
-                    println!("{}", serde_json::to_string(&(k, v))?);
-                }
-                Ok(true)
-            }
-        },
-        Command::Log { cmd, path } => match cmd {
-            LogCommand::Get { index } => {
-                let index = match index {
-                    cli::LogIndex::DateRange(..) => todo!(),
-                    cli::LogIndex::DateScalar(..) => todo!(),
-                    cli::LogIndex::NumberRange(..) => todo!(),
-                    cli::LogIndex::NumberScalar(index) => index,
-                };
-                let Some(line) = Log::new(&path)?.get_by_index(index)? else {
-                    eprintln!("{path:?} has no element at index {index}");
-                    return Ok(false);
-                };
-                println!("{}", serde_json::to_string(&line)?);
-                Ok(true)
-            }
-            LogCommand::Iter => {
-                let log = Log::new(path)?;
-                let cursor = log.iter()?;
-                for row in cursor {
-                    let line = row?;
-                    println!("{}", serde_json::to_string(&line)?);
-                }
-                Ok(true)
-            }
-            LogCommand::Push { content } => {
-                let content = content_or_stdin(content.as_deref())?;
-                let index = Log::new(path)?.push(content)?;
-                println!("{index}");
-                Ok(true)
-            }
-        },
+        Command::Kv { cmd, path } => run_kv_command(path, cmd),
+        Command::Log { cmd, path } => run_log_command(path, cmd),
+        Command::Paste => {
+            let output = std::process::Command::new("wl-paste")
+                .output()
+                .context("wl-paste failed")?;
+            let content = str::from_utf8(output.stdout.as_slice())?;
+            let (log, path) = Log::open_default().context("Log::open_default() failed")?;
+            let index = log.push(content)?;
+            let output = json!({ "content": content, "index": index, "path": path });
+            println!("{}", serde_json::to_string(&output)?);
+            Ok(true)
+        }
         Command::Push { content } => {
             let content = content_or_stdin(content.as_deref())?;
-            let dirs = directories::ProjectDirs::from("", "ReactorScram", "sql-hummus")
-                .context("Couldn't create directories::ProjectDirs")?;
-            let dir = dirs.data_local_dir();
-            std::fs::create_dir_all(dir)?;
-            let path = dir.join("default-log.db");
-            let index = Log::new(&path)?.push(content)?;
+            let (log, path) = Log::open_default().context("Log::open_default() failed")?;
+            let index = log.push(content)?;
             let output = json!({ "index": index, "path": path });
             println!("{}", serde_json::to_string(&output)?);
             Ok(true)
