@@ -9,7 +9,7 @@ keywords = ["database", "sqlite"]
 license-file = "LICENSE.md"
 readme = "README.md"
 repository = "https://github.com/ReactorScram/sql-hummus"
-version = "0.1.4"
+version = "0.1.5"
 
 [dependencies]
 anyhow = { version = "1.0.103", features = ["backtrace"] }

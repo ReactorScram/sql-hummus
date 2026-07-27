@@ -34,7 +34,7 @@ pub(crate) enum Command {
     },
 
     /// Quick paste to the default log file. Uses `wl-paste`
-    Paste,
+    Paste { annotation: Option<String> },
 
     /// Quick push to the default log file
     Push { content: Option<String> },
