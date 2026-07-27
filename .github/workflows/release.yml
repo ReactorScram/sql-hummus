@@ -11,7 +11,7 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  release:
     runs-on: ubuntu-26.04
     steps:
       - name: Checkout
@@ -31,5 +31,5 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
-          name: linux-amd64
+          name: sql-hummus-x86_64-unknown-linux-gnu-${{ GITHUB_SHA::8 }}
           path: dist/*
