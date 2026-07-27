@@ -6,7 +6,7 @@ sql-hummus is a tasty way to write logs and manage key-value stores.
 
 ```
 # Save Wayland clipboard to the default log
-sql-hummus paste
+sql-hummus paste "This annotation will be stored alongside the clipboard contents"
 
 # Write to the default log manually
 sql-hummus push "Dear diary, when in the course of human events,"
@@ -44,9 +44,9 @@ sql-hummus log diary.db iter | jq .
 sql-hummus log diary.db get 1
 ```
 
-Every element has the Unix epoch and local time (as RFC 3339) from when it was written.
+Every element has the Unix epoch from when it was written.
 
-Use log files for app logging or personal journaling. SQLite offers more reliability than plaintext, and it keeps the timestamps out-of-band.
+Use log files for app logging or personal journaling. The "default log" is stored in a well-known path in `$HOME` and is recommended for interactive use. Keeping logs in SQLite offers more reliability than plaintext, and it keeps the timestamps and annotations out-of-band.
 
 ## KV files
 
