@@ -33,6 +33,9 @@ pub(crate) enum Command {
         cmd: LogCommand,
     },
 
+    /// Quick paste to the default log file. Uses `wl-paste`
+    Paste,
+
     /// Quick push to the default log file
     Push { content: Option<String> },
 }

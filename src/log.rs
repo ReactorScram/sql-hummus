@@ -1,5 +1,7 @@
+use crate::error::{Cookie as _, Error, Result};
 use std::time::SystemTime;
 
+use camino::Utf8PathBuf;
 use sql_peas::StatementHandle;
 
 pub struct Log {
@@ -26,64 +28,6 @@ pub struct Element {
     value: String,
 }
 
-#[derive(Debug, thiserror::Error)]
-#[error(transparent)]
-pub struct PublicError(#[from] ErrorRepr);
-
-// FIXME: I'm not 100% about this error setup. If you have gdb, it's redundant. If you don't have gdb, it's nice.
-#[derive(Debug, thiserror::Error)]
-#[error("kind={kind}; cookies={cookies:?}")]
-struct ErrorRepr {
-    cookies: Vec<&'static str>,
-    #[source]
-    kind: ErrorKind,
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum ErrorKind {
-    #[error("SQLite error: {0}")]
-    Sqlite(#[from] sql_peas::Error),
-    #[error("Error: {0}")]
-    Other(&'static str),
-    #[error("ULID decode error: {0}")]
-    UlidDecode(#[from] ulid::DecodeError),
-}
-
-impl<T> From<T> for PublicError
-where
-    ErrorKind: From<T>,
-{
-    fn from(value: T) -> Self {
-        ErrorRepr {
-            cookies: vec![],
-            kind: ErrorKind::from(value),
-        }
-        .into()
-    }
-}
-
-trait Cookie<T> {
-    fn cookie(self, s: &'static str) -> Result<T>;
-}
-
-impl<T, E> Cookie<T> for std::result::Result<T, E>
-where
-    PublicError: From<E>,
-{
-    fn cookie(self, s: &'static str) -> Result<T> {
-        match self {
-            Ok(x) => Ok(x),
-            Err(e) => {
-                let mut e = PublicError::from(e);
-                e.0.cookies.push(s);
-                Err(e)
-            }
-        }
-    }
-}
-
-type Result<T> = std::result::Result<T, PublicError>;
-
 impl Iterator for LogCursor<'_> {
     type Item = Result<Element>;
 
@@ -108,6 +52,21 @@ const LOG_USER_VERSION_I64: i64 = LOG_USER_VERSION as i64;
 const LOG_TABLE_NAME: &str = "sql_hummus_0_log";
 
 impl Log {
+    /// Opens the default user-scope log.
+    ///
+    /// Only use this as a result of user interaction.
+    ///
+    /// The default log is shared among everything the user does, so it would get spammed easily if automated processes write to it.
+    pub fn open_default() -> Result<(Log, Utf8PathBuf)> {
+        let dirs = directories::ProjectDirs::from("", "ReactorScram", "sql-hummus")
+            .ok_or(Error::from("directories::ProjectDirs failed"))?;
+        let dir = dirs.data_local_dir();
+        std::fs::create_dir_all(dir).cookie("create_dir_all() for default data dir failed")?;
+        let path = dir.join("default-log.db").try_into()?;
+        let log = Log::new(&path)?;
+        Ok((log, path))
+    }
+
     pub fn new<P: AsRef<std::path::Path>>(p: P) -> Result<Self> {
         let mut inner = sql_peas::Connection::open(p)?;
 
@@ -120,16 +79,14 @@ impl Log {
             let stmt = inner.borrow_statement(handle)?;
             // FIXME: de-dupe single row read up into SQLite
             let mut rows = stmt.iter();
-            let row = rows.next().ok_or(ErrorKind::Other(
-                "Expected one row from PRAGMA user_version",
-            ))??;
+            let row = rows
+                .next()
+                .ok_or("Expected one row from PRAGMA user_version")??;
             let needs_setup = match row.read(0) {
                 0 => true,
                 LOG_USER_VERSION_I64 => false,
                 _ => {
-                    return Err(ErrorKind::Other(
-                        "PRAGMA user_version looks like a non-KV file",
-                    ))?;
+                    return Err("PRAGMA user_version looks like a non-KV file")?;
                 }
             };
 
@@ -176,9 +133,7 @@ impl Log {
             return Ok(None);
         }
         if index != stmt.read(0)? {
-            Err(ErrorKind::Other(
-                "Log::get didn't get the same index back from the DB",
-            ))?;
+            Err("Log::get didn't get the same index back from the DB")?;
         }
         let ulid = ulid::Ulid::from_string(&stmt.read::<String, _>(1)?)?;
         let value = stmt.read(2)?;
@@ -199,15 +154,11 @@ impl Log {
         stmt.bind((1, ts)).cookie("7RMQCY4N")?;
         stmt.bind((2, value)).cookie("AGRZOZBD")?;
         if stmt.next().cookie("WEMNOGO7")? != sql_peas::State::Row {
-            Err(ErrorKind::Other(
-                "We didn't get State::Row during Log::insert",
-            ))?;
+            Err("We didn't get State::Row during Log::insert")?;
         }
         let index = stmt.read(0).cookie("MEJYJBDW")?;
         if stmt.next().cookie("QOV7GD47")? != sql_peas::State::Done {
-            Err(ErrorKind::Other(
-                "We didn't get sql_peas::State::Done during Log::insert",
-            ))?;
+            Err("We didn't get State::Done during Log::insert")?;
         }
         Ok(index)
     }
