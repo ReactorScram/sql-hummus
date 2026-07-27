@@ -110,13 +110,15 @@ fn inner_main() -> Result<bool> {
     match cli.cmd {
         Command::Kv { cmd, path } => run_kv_command(path, cmd),
         Command::Log { cmd, path } => run_log_command(path, cmd),
-        Command::Paste => {
-            let output = std::process::Command::new("wl-paste")
+        Command::Paste { annotation } => {
+            let clipboard = std::process::Command::new("wl-paste")
                 .output()
                 .context("wl-paste failed")?;
-            let content = str::from_utf8(output.stdout.as_slice())?;
+            let clipboard = str::from_utf8(clipboard.stdout.as_slice())?;
+            let content = json!({ "annotation": annotation, "clipboard": clipboard });
+
             let (log, path) = Log::open_default().context("Log::open_default() failed")?;
-            let index = log.push(content)?;
+            let index = log.push(serde_json::to_string(&content)?)?;
             let output = json!({ "content": content, "index": index, "path": path });
             println!("{}", serde_json::to_string(&output)?);
             Ok(true)
