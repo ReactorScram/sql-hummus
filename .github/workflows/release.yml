@@ -1,6 +1,9 @@
 name: Release Binaries
 
 on:
+  pull_request:
+    branches:
+      - main
   push:
     branches: [ main ]
     tags:
@@ -15,24 +18,32 @@ env:
 
 jobs:
   release:
-    runs-on: ubuntu-26.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-26.04
+            target: x86_64-unknown-linux-gnu
+          - os: macos-26
+            target: aarch64-apple-darwin
+          - os: windows-2025
+            target: x86_64-pc-windows-msvc
+
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
       - name: Build release
+        shell: bash
         run: |
           set -euox pipefail
           cargo build --release
-
-      - name: Prepare artifact
-        run: |
-          set -eoux pipefail
           mkdir -p dist
-          cp target/release/${BIN_NAME} dist/${BIN_NAME}
+          cp target/release/${BIN_NAME} dist/${BIN_NAME}-${{ matrix.target }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ env.BIN_NAME }}-x86_64-unknown-linux-gnu-${{ github.sha }}
+          name: ${{ env.BIN_NAME }}-${{ matrix.target }}-${{ github.sha }}
           path: dist/*

@@ -11,7 +11,7 @@ on:
 
 jobs:
   check:
-    runs-on: macos-latest
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v7
       - run: rustup toolchain install stable --profile=minimal --component=clippy --component=rustfmt
@@ -21,7 +21,7 @@ jobs:
   test:
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
+        os: [macos-26, ubuntu-26.04, windows-2025]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
